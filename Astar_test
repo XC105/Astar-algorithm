@@ -1,0 +1,176 @@
+#自定义路线（#为障碍物。S为起点，E为终点）
+tm = [
+'#############################################################',
+'#                                                           #',
+'#                                                           #',
+'#                                                           #',
+'#                                                           #',
+'#       S               #                                   #',
+'#                      ##                                   #',
+'#                      ##                                   #',
+'#                     ###                                   #',
+'#                    ####                                   #',
+'#                 #######                                   #',
+'#         ###############                                   #',
+'#                       #                                   #',
+'#                       #                                   #',
+'#                       #                                   #',
+'#                       #                                   #',
+'#                       #                                   #',
+'#                       #                      E            #',
+'#                       #                                   #',
+'#                       #                                   #',
+'#                       #                                   #',
+'#                       #                                   #',
+'#                       ##                                  #',
+'#                       ##                                  #',
+'#                       ##                                  #',
+'#                       ##                                  #',
+'#                                                           #',
+'#                                                           #',
+'#                                                           #',
+'#############################################################']
+
+
+# with open("/Users/chaoxie/Desktop/路径优化/1.txt", "r") as f:  # 打开文件
+#     tm = f.read()  # 读取文件
+
+
+
+
+class Node(object):
+    def __init__(self, x, y, parent):
+        self.x = x
+        self.y = y
+        self.parent = parent    # xy坐标，parent父节点
+
+
+class Astar(object):
+    def __init__(self, x1, y1, x2, y2):
+        self.x1, self.y1 = x1, y1   # 起点坐标
+        self.x2, self.y2 = x2, y2   # 终点坐标
+        self.openlist = []      # 下一步可以走的路
+        self.closelist = []     # 已经走过的路
+
+    def isinlist(self, nodelist, node):
+        for i in nodelist:
+            if i.x == node.x and i.y == node.y:
+                return i
+        return
+
+    def dist(self, x1, y1, x2, y2):
+        if x1 == x2 or y1 == y2:
+            return 1
+        else:
+            return 1.4
+
+    def t(self):
+        s = Node(self.x1, self.y1, None)    # 起点
+        s.dist = 0
+
+        while True:
+            # 当前节点的邻接点
+            sx = (-1, 0, 1, -1, 1, -1, 0, 1)
+            sy = (-1, -1, -1, 0, 0, 1, 1, 1)
+            for x, y in zip(sx, sy):
+                new_x, new_y = s.x + x, s.y + y
+
+                # 判断邻接点是否可走：不是障碍物； 不在关闭列表内。
+                # 如果可走，加入开放列表
+                if tm[new_y][new_x] == '#': continue                    # 障碍物不做任何处理
+
+                new_node = Node(new_x, new_y, s)
+                new_node.dist = s.dist + self.dist(s.x, s.y, new_node.x, new_node.y)
+
+                if self.isinlist(self.closelist, new_node): continue    # 在关闭列表内不做任何处理
+
+                # 可行就加入开放列表
+                isin = self.isinlist(self.openlist, new_node)
+                if isin:                            # 已经在开放列表，检测更新g h 父节点
+                    if new_node.dist < isin.dist:
+                        isin.dist = new_node.dist
+                        isin.parent = new_node.parent
+                else:
+                    # 不在开放列表直接添加
+                    self.openlist.append(new_node)
+
+            # 结束循环
+            if not self.openlist: return
+            if self.isinlist(self.openlist, Node(self.x2, self.y2, s)):
+                return s
+
+            # 找出F最小的节点
+            # F 最小的节点 和 当前节点 s 无关
+            minf = None
+            min_node = None
+            for i in self.openlist:
+                value = i.dist + (abs(i.x - self.x2) + abs(i.y - self.y2))
+                if minf == None:
+                    minf = value
+                    min_node = i
+                elif value < minf:
+                    minf = value
+                    min_node = i
+                else:
+                    pass
+            print(min_node.parent.x, min_node.parent.y, s.x, s.y)
+
+            # 将F最小的节点从开放列表移除，并加入关闭列表
+            self.openlist.remove(min_node)
+            self.closelist.append(min_node)
+
+            # 起点更新为该节点
+            s = min_node
+
+    def search(self):
+        s = []
+        for i in self.openlist:
+            s.append((i.x, i.y))
+        for i in self.closelist:
+            s.append((i.x, i.y))
+        return s
+
+def path(s):
+    mypath = []
+    while s.parent:
+        mypath.insert(0, (s.x, s.y))
+        s = s.parent
+    return mypath
+
+def find_point(s):
+    for indy, row in enumerate(tm):
+        for indx, column in enumerate(row):
+            if column == s:
+                return indx, indy
+
+def print_path(path, search):
+    lenx = len(tm[0])
+    leny = len(tm)
+    newtm = []
+    for i in range(leny):
+        row = ''
+        for j in range(lenx):
+            s = tm[i][j]
+            if (j, i) in search:
+                s = ' '
+            if (j, i) in path:
+                s = '*'
+            row += s
+        newtm.append(row)
+    return '\n'.join(newtm)
+
+
+if __name__ == '__main__':
+    x1, y1 = find_point('S')
+    x2, y2 = find_point('E')
+    print(x1, y1, x2, y2)
+    astar = Astar(x1, y1, x2, y2)
+    s = astar.t()
+    print(s.x, s.y)
+
+    search = astar.search()
+
+    mypath = path(s)
+    print(mypath)
+
+    print(print_path(mypath, search))
